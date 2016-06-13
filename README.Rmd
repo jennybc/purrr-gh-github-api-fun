@@ -1,0 +1,129 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, echo = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "README-"
+)
+```
+
+## Bulk operations via the GitHub API using `purrr` and `gh`
+
+*intro would go here*
+
+### Close all the issues for a repo
+
+For Greg Wilson.
+
+You will need a GitHub personal access token (PAT): <https://github.com/settings/tokens>. The default scopes should be fine. Remember to capture it while it's displayed, because there's no way to see it a second time! If you goof that up, just "edit" and regenerate the token.
+
+```{r include = FALSE, eval = FALSE}
+## me getting up to speed
+
+library(purrr)
+library(gh)
+library(dplyr)
+
+## here's a disposible repo I created for a different reason, now resolved
+## https://github.com/jennybc/foo
+owner <- "jennybc"
+repo <- "foo"
+
+## list all open issues at the start
+## https://developer.github.com/v3/issues/#list-issues-for-a-repository
+## GET /repos/:owner/:repo/issues
+issues <- gh("/repos/:owner/:repo/issues", owner = user, repo = repo)
+## I expect zero
+length(issues)
+
+## open a bunch of issues on it
+## https://developer.github.com/v3/issues/#create-an-issue
+n <- 4L
+f <- function()
+  paste(capture.output(print(fortunes::fortune())), collapse = "\n")
+iss_df <- data_frame(title = paste("Issue", 1:4),
+                     body = replicate(n, f()))
+issues <- iss_df %>% 
+  pmap(gh, endpoint = "POST /repos/:owner/:repo/issues",
+       owner = owner, repo = repo)
+
+## inspect result to make sure that worked
+issues %>% 
+  data_frame(resp = .) %>% 
+  mutate(title = map_chr(resp, "title"),
+         state = map_chr(resp, "state"),
+         status = map(resp, attr, which = "response"),
+         status = map_chr(status, `[[`, "status")) %>% 
+  select(-resp)
+
+## list issues to make sure I've got expected number
+## https://developer.github.com/v3/issues/#list-issues-for-a-repository
+## GET /repos/:owner/:repo/issues
+issues <- gh("/repos/:owner/:repo/issues", owner = user, repo = repo)
+identical(length(issues), n)
+
+## now close them
+## https://developer.github.com/v3/issues/#edit-an-issue
+
+## data frame of issues to close
+## in this case, all of them
+iss_df <- issues %>% 
+  data_frame(resp = .) %>% 
+  mutate(number =  map_int(resp, "number"),
+         state = "closed") %>% 
+  select(-resp)
+
+issues <- iss_df %>% 
+  pmap(gh, endpoint = "PATCH /repos/:owner/:repo/issues/:number",
+       owner = owner, repo = repo)
+
+## inspect result to make sure that worked
+issues %>% 
+  data_frame(resp = .) %>% 
+  mutate(title = map_chr(resp, "title"),
+         state = map_chr(resp, "state"),
+         status = map(resp, attr, which = "response"),
+         status = map_chr(status, `[[`, "status")) %>% 
+  select(-resp)
+
+## list issues to see if they're all closed
+issues <- gh("/repos/:owner/:repo/issues",
+             owner = user, repo = repo, state = "all")
+issues %>% 
+  data_frame(resp = .) %>% 
+  mutate(title = map_chr(resp, "title"),
+         state = map_chr(resp, "state")) %>% 
+  select(-resp)
+```
+
+```{r eval = FALSE}
+## use install.packages() to install any of these that you don't have
+## example:
+## install.packages("purrr")
+library(purrr)
+library(gh)
+
+## populate with your targetted user/owner and repo
+owner <- "jennybc"
+repo <- "foo"
+
+## we usually have the GitHub PAT in an environment variable
+## so we don't have to fiddle with it often
+## you can temporarily emulate like so:
+Sys.setenv("GITHUB_PAT" = "YOUR_GITHUB_PAT_GOES_HERE")
+
+## get open issues
+issues <- gh("/repos/:owner/:repo/issues", owner = owner, repo = repo)
+
+## close them
+issues <- issues %>% 
+  map_int("number") %>% 
+  map(~ gh("PATCH /repos/:owner/:repo/issues/:number",
+           owner = owner, repo = repo, state = "closed", number = .x))
+```
+
