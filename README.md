@@ -12,10 +12,14 @@ For Greg Wilson.
 You will need a GitHub personal access token (PAT): <https://github.com/settings/tokens>. The default scopes should be fine. Remember to capture it while it's displayed, because there's no way to see it a second time! If you goof that up, just "edit" and regenerate the token.
 
 ``` r
-## use install.packages() to install any of these that you don't have
-## example:
+## use install.packages() to install anything that's on CRAN
 ## install.packages("purrr")
 library(purrr)
+
+## use devtools::install_github() to install anything that's on GitHub but
+## not CRAN
+## install.packages("devtools")
+## devtools::install_github("gaborcsardi/gh")
 library(gh)
 
 ## populate with your targetted user/owner and repo

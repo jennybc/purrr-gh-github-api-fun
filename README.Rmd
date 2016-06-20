@@ -102,10 +102,14 @@ issues %>%
 ```
 
 ```{r eval = FALSE}
-## use install.packages() to install any of these that you don't have
-## example:
+## use install.packages() to install anything that's on CRAN
 ## install.packages("purrr")
 library(purrr)
+
+## use devtools::install_github() to install anything that's on GitHub but
+## not CRAN
+## install.packages("devtools")
+## devtools::install_github("gaborcsardi/gh")
 library(gh)
 
 ## populate with your targetted user/owner and repo
